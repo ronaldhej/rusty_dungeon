@@ -38,10 +38,11 @@ fn main() {
         .add_plugins(EguiPlugin)
         .add_systems(Startup, setup)
         .add_systems(Update, file_picker_system)
+        .add_systems(Update, draw_terrain_system)
         .run();
 }
 
-fn setup(mut commands: Commands, mut materials: ResMut<Assets<ColorMaterial>>) {
+fn setup(mut commands: Commands) {
     commands.spawn(MyApp {
         selected_file_input: SelectedPathInput::Python,
         binary_path: None,
@@ -49,6 +50,8 @@ fn setup(mut commands: Commands, mut materials: ResMut<Assets<ColorMaterial>>) {
         python_path: None,
         map: Some(HashMap::new()),
     });
+
+    commands.spawn(Camera2dBundle::default());
 }
 
 fn file_picker_system(mut contexts: EguiContexts, mut query: Query<&mut MyApp>) {
@@ -187,3 +190,40 @@ fn parse_output_to_room(output: &str) -> (String, Room) {
 }
 
 // DISPLAY STUFF
+fn draw_terrain_system(
+    mut commands: Commands,
+    query: Query<&MyApp>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+) {
+    let my_app = query.single();
+
+    if let Some(map) = &my_app.map {
+        if let Some(room) = map.values().next() {
+            let terrain = &room.layers.terrain;
+
+            for (y, row) in terrain.iter().enumerate() {
+                for (x, cell) in row.iter().enumerate() {
+                    let color = match cell.as_str() {
+                        "#" => Color::rgb(1.0, 0.0, 0.0), // Red for "*"
+                        "." => Color::rgb(0.8, 0.8, 0.8), // Green for "."
+                        _ => Color::rgb(1.0, 1.0, 1.0),   // White for any other symbol
+                    };
+
+                    commands.spawn(SpriteBundle {
+                        sprite: Sprite {
+                            color,
+                            custom_size: Some(Vec2::new(TILE_SIZE, TILE_SIZE)),
+                            ..Default::default()
+                        },
+                        transform: Transform::from_translation(Vec3::new(
+                            x as f32 * TILE_SIZE - 400.0,
+                            y as f32 * TILE_SIZE - 300.0,
+                            0.0,
+                        )),
+                        ..Default::default()
+                    });
+                }
+            }
+        }
+    }
+}
