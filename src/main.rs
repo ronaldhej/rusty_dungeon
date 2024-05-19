@@ -3,7 +3,8 @@ use bevy::{
 };
 use bevy_egui::{egui, EguiContexts, EguiPlugin};
 use serde::{ser::Error, Deserialize, Serialize};
-use std::{borrow::Borrow, process::Command};
+use serde_json::Value;
+use std::{borrow::Borrow, collections::HashMap, process::Command};
 
 #[derive(Component)]
 struct MyApp {
@@ -11,7 +12,7 @@ struct MyApp {
     binary_path: Option<String>,
     script_path: Option<String>,
     python_path: Option<String>,
-    map: Option<Map>,
+    map: Option<HashMap<String, Room>>,
 }
 
 #[derive(PartialEq)]
@@ -22,7 +23,14 @@ enum SelectedPathInput {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct Map(Vec<Vec<char>>);
+struct Room {
+    layers: Layer,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct Layer {
+    terrain: Vec<Vec<String>>,
+}
 
 fn main() {
     App::new()
@@ -39,7 +47,7 @@ fn setup(mut commands: Commands) {
         binary_path: None,
         script_path: None,
         python_path: None,
-        map: None,
+        map: Some(HashMap::new()),
     });
 }
 
@@ -97,11 +105,9 @@ fn file_picker_system(mut contexts: EguiContexts, mut query: Query<&mut MyApp>) 
                         run_binary(python_path, binary_path, script_path);
                     match result {
                         Ok(result) => {
-                            println!("result: {result}");
-                            let _map = match parse_output_to_struct(&result) {
-                                Ok(map) => my_app.map = Some(map),
-                                Err(e) => println!("Error: {e}"),
-                            };
+                            let (name, room) = parse_output_to_room(&result);
+                            my_app.map.as_mut().unwrap().insert(name, room);
+                            println!("Hashmap values: {:?}", my_app.map);
                         }
                         Err(e) => println!("Error: {e}"),
                     }
@@ -168,7 +174,14 @@ fn run_binary(
     }
 }
 
-fn parse_output_to_struct(output: &str) -> Result<Map, serde_json::Error> {
-    let result: Result<Map, serde_json::Error> = serde_json::from_str(output);
-    return result;
+fn parse_output_to_room(output: &str) -> (String, Room) {
+    let value: Value = serde_json::from_str(output).unwrap();
+    let (room_name, room_content) = value
+        .as_object()
+        .and_then(|obj| obj.into_iter().next())
+        .expect("Expected a single map key and value");
+
+    let room: Room = serde_json::from_value(room_content.clone()).expect("Deserialization failed");
+
+    return (room_name.to_string(), room);
 }
