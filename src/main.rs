@@ -1,10 +1,10 @@
-use bevy::{
-    log::tracing_subscriber::fmt::FormattedFields, prelude::*, ui::UI_MATERIAL_SHADER_HANDLE,
-};
+use bevy::{prelude::*, render::view::ExtractedWindows, ui::UI_MATERIAL_SHADER_HANDLE};
 use bevy_egui::{egui, EguiContexts, EguiPlugin};
 use serde::{ser::Error, Deserialize, Serialize};
 use serde_json::Value;
 use std::{borrow::Borrow, collections::HashMap, process::Command};
+
+const TILE_SIZE: f32 = 32.0;
 
 #[derive(Component)]
 struct MyApp {
@@ -41,7 +41,7 @@ fn main() {
         .run();
 }
 
-fn setup(mut commands: Commands) {
+fn setup(mut commands: Commands, mut materials: ResMut<Assets<ColorMaterial>>) {
     commands.spawn(MyApp {
         selected_file_input: SelectedPathInput::Python,
         binary_path: None,
@@ -185,3 +185,5 @@ fn parse_output_to_room(output: &str) -> (String, Room) {
 
     return (room_name.to_string(), room);
 }
+
+// DISPLAY STUFF
