@@ -259,6 +259,7 @@ fn draw_terrain_system(
                         "." => Color::rgb(0.8, 0.8, 0.8), // Green for "."
                         "&" => Color::rgb(0.1, 0.7, 0.5), // Green for "."
                         "@" => Color::rgb(0.1, 0.2, 0.3), // Green for "."
+                        "*" => Color::rgb(0.0, 0.0, 0.0), // Green for "."
                         _ => Color::rgb(1.0, 1.0, 1.0),   // White for any other symbol
                     };
 
